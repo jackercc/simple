@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>test leancloud!</title>
+
+    <script src="https://cdn1.lncld.net/static/js/av-min-1.0.0.js"></script>
+
+    <script type="text/javascript">
+        // 应用 ID，用来识别应用
+        var APP_ID = 'YgJiG2IyJ4DNin9ULT4uQu0g-gzGzoHsz';
+
+        // 应用 Key，用来校验权限（Web 端可以配置安全域名来保护数据安全）
+        var APP_KEY = 'Ff0iHjU8iIHUcKIgxdrDC7V0';
+
+        // 初始化
+        AV.init({
+            appId: APP_ID,
+            appKey: APP_KEY
+        });
+
+
+        var TestObject = AV.Object.extend('TestObject');
+        var testObject = new TestObject();
+        /*testObject.save({
+         testabc: 'abc123'
+         }).then(function() {
+         alert('LeanCloud works!');
+         }).catch(function(err) {
+         alert('error:' + err);
+         });*/
+
+        testObject.fetch(function (data) {
+            console.log(data);
+        });
+
+        /*        testObject.update({
+         contentType : 'application/json',
+         ObjectId : '577f11fc5bbb500061e5136b',
+         testabc : 'abc4321'
+         },function(data){
+         console.log(data);
+         });*/
+
+
+    </script>
+</head>
+<body>
+test leancloud!
+Please open the console and refresh the page.
+</body>
+</html>

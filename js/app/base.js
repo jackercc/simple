@@ -1,498 +1,89 @@
-/**
-* @fileoverview ºËĞÄÎÄ¼ş£¬°üº¬°´ĞèÔØÈë¹ÜÀíÆ÷ºÍ»ù´¡º¯ÊıµÄ·â×°
-* @author yuyang <yuyangvi@gmail.com>
-* @version 1.0
-*/
-(function () {
-    if (!window.Breeze) {
-        /**
-        * Function À©Õ¹
-        */
-        Function.prototype.bind = function () {
-            var fn = this, args = Array.prototype.slice.call(arguments, 0), object = args.shift();
-            return function () {
-                return fn.apply(object,
-			  args.concat(Array.prototype.slice.call(arguments, 0)));
-            };
-        };
-        /**
-        * Ê¹IE¼æÈİÊı×éµÄindexOf·½·¨.
-        * @memberOf Array
-        * @returns Êı×Ö£¬±íÊ¾ÔªËØÔÚÊı×éÖĞµÄË÷ÒıµØÖ·£¬Èç¹û²»ÔÚÊı×éÖĞ¾Í·µ»Ø-1
-        * @type int
-        */
-        if (!Array.prototype.indexOf) {
-            Array.prototype.indexOf = function (elt /*, from*/) {
-                var len = this.length >>> 0;
+// åº”ç”¨ IDï¼Œç”¨æ¥è¯†åˆ«åº”ç”¨
+var APP_ID = 'YgJiG2IyJ4DNin9ULT4uQu0g-gzGzoHsz';
 
-                var from = Number(arguments[1]) || 0;
-                from = (from < 0)
-				 ? Math.ceil(from)
-				 : Math.floor(from);
-                if (from < 0)
-                    from += len;
+// åº”ç”¨ Keyï¼Œç”¨æ¥æ ¡éªŒæƒé™ï¼ˆWeb ç«¯å¯ä»¥é…ç½®å®‰å…¨åŸŸåæ¥ä¿æŠ¤æ•°æ®å®‰å…¨ï¼‰
+var APP_KEY = 'Ff0iHjU8iIHUcKIgxdrDC7V0';
 
-                for (; from < len; from++) {
-                    if (from in this &&
-				  this[from] === elt)
-                        return from;
-                }
-                return -1;
-            };
-        }
-        window.isQueue = false;
-        var loadQueue = [],
-		modQueue = [],
+$(document).ajaxSend(function (e, jqXHR, options) {
+    var now = new Date();
+    var millions = now.getTime();
+    var hash = CryptoJS.MD5(millions + APP_KEY);
+    jqXHR.setRequestHeader('X-LC-Id', APP_ID);
+    jqXHR.setRequestHeader('X-LC-Sign', hash + ',' + millions);
+});
 
-		isLoading = false,
-		loadingIndex = 0,
-		runVerson = '1.0.0912',
+var BaseModel = Backbone.Model.extend({
 
-		startQueue = function () {
-		    if (loadQueue.length === 0) {
-		        isQueue = false;
-		        return;
-		    }
-		    isQueue = true;
-		    var mod = loadQueue.shift();
-		    (loadingIndex > 0) && (loadingIndex--);
-		    switch (typeof mod) {
-		        case 'string': //Ä£×é
-		            if (modQueue.indexOf(mod) == -1) {
-		                var script = document.createElement('script');
-		                script.id = mod.replace('.', '-');
+    idAttribute: 'objectId',
+    objectClass: 'issue',
+    urlRoot: function () {
+        return 'https://leancloud.cn/1.1/classes/' + this.objectClass
+    },
 
-		                var i = mod.indexOf('.');
-		                if (i < 0) {
-		                    mod = 'core.' + mod;
-		                } else {
-		                    //²¹³äÉÏ²ãÃüÃû¿Õ¼ä
-		                    var basemod = mod.slice(0, i);
-		                    Breeze[basemod] || (Breeze[basemod] = {});
-		                }
-		                script.src = Breeze.path + mod.replace('.', '/') + '.js?v='+runVerson;
-		                isQueue = false;
-		                isLoading = true;
-						//document.body.appendChild(script);
-		                document.getElementsByTagName('head')[0].appendChild(script);
-		            } else {
-		                startQueue();
-		            }
-		            break;
-		        case 'function': //»ØÖ´
-		            mod(Breeze);
-		            startQueue();
-		        default:
-		    }
-		},
-		word,
-        win = window,
-        doc = win.document,
-        // Is the DOM ready to be used? Set to true once it occurs.
-	    isReady = false,
-
-        // The functions to execute on DOM ready.
-	    readyList = [],
-
-        // Has the ready events already been bound?
-	    readyBound = false;
-        /** 
-        * @construct
-        */
-        Breeze = {
-            version: '1.0.0',
-            path: BREEZE_BASE_PATH,/*function () {
-                return document.getElementById('B_script_base').src.replace('core/base.js', '');
-            } (),*/
-            /**
-            * @description ½«²ÎÊıÖĞµÄjsÎÄ¼şºÍº¯Êı¼ÓÈë¹ÜÀí¶ÓÁĞ<br />
-            * ²ÎÊı¿ÉÒÔÊÇ×Ö·û´®»òÕßº¯Êı±¾Éí
-            * @exports require as Breeze.require
-            * @params {String|Function} fun
-            */
-            require: function () {
-                var args = Array.prototype.slice.call(arguments),
-				prequeue = loadQueue.slice(0, loadingIndex),
-				afterqueue = loadQueue.slice(loadingIndex);
-                loadQueue = prequeue.concat(args, afterqueue);
-                loadingIndex += args.length;
-                isQueue || isLoading || startQueue();
-            },
-            /**
-            * @description ÃüÃû¿Õ¼ä, ÓÃÔÚ¸÷Ä£¿éÎÄ¼şÏÂÃæ,ÒÔ×¢Ã÷×Ô¼ºËù´ú±íµÄÄ£¿é¡£
-            * @param {String} modName ¶ÔÓ¦µÄÃû³Æ
-            *
-            */
-            namespace: function (modName, fn) {
-                modQueue.push(modName);
-                loadingIndex = 0;
-                fn(Breeze);
-                isLoading = false;
-                isQueue || startQueue();
-            },
-
-            /**
-            * @description ¼ì²â¶ÔÏóÊÇ·ñÊÇ×ÖÃæÁ¿¶ÔÏó
-            * @param {Object} o ¶ÔÏó
-            * @returns {Boolean}
-            */
-            isPlainObject: function (o) {
-                return o && o.toString() === '[object Object]' && !o['nodeType'] && !o['setInterval'];
-            },
-            /**
-            * @description µ±dom¼ÓÔØÍê³ÉºóÖ´ĞĞ
-            * @params {Function} DOM¼ÓÔØÍê³ÉºóÒªÖ´ĞĞµÄº¯Êı
-            * @example B.ready(function(){
-                                do some thing...
-                                });
-            */
-            ready: function (fn) {
-                // Attach the listeners
-                if (!readyBound) this._bindReady();
-
-                // If the DOM is already ready
-                if (isReady) {
-                    // Execute the function immediately
-                    fn.call(win, this);
-                } else {
-                    // Remember the function for later
-                    readyList.push(fn);
-                }
-            },
-            /**
-            * Binds ready events.
-            */
-            _bindReady: function () {
-                var self = this,
-					doScroll = doc.documentElement.doScroll,
-					eventType = doScroll ? 'onreadystatechange' : 'DOMContentLoaded',
-					COMPLETE = 'complete',
-					fire = function () {
-					    self._fireReady();
-					};
-
-                // Set to true once it runs
-                readyBound = true;
-
-                // Catch cases where ready() is called after the
-                // browser event has already occurred.
-                if (doc.readyState === COMPLETE) {
-                    return fire();
-                }
-
-                // w3c mode
-                if (doc.addEventListener) {
-                    function domReady() {
-                        doc.removeEventListener(eventType, domReady, false);
-                        fire();
-                    }
-
-                    doc.addEventListener(eventType, domReady, false);
-
-                    // A fallback to window.onload, that will always work
-                    win.addEventListener('load', fire, false);
-                }
-                // IE event model is used
-                else {
-                    function stateChange() {
-                        if (doc.readyState === COMPLETE) {
-                            doc.detachEvent(eventType, stateChange);
-                            fire();
-                        }
-                    }
-
-                    // ensure firing before onload, maybe late but safe also for iframes
-                    doc.attachEvent(eventType, stateChange);
-
-                    // A fallback to window.onload, that will always work.
-                    win.attachEvent('onload', fire);
-
-                    if (win == win.top) { // not an iframe
-                        function readyScroll() {
-                            try {
-                                // Ref: http://javascript.nwbox.com/IEContentLoaded/
-                                doScroll('left');
-                                fire();
-                            } catch (ex) {
-                                setTimeout(readyScroll, 1);
-                            }
-                        }
-                        readyScroll();
-                    }
-                }
-            },
-
-            /**
-            * Executes functions bound to ready event.
-            */
-            _fireReady: function () {
-                if (isReady) return;
-
-                // Remember that the DOM is ready
-                isReady = true;
-
-                // If there are functions bound, to execute
-                if (readyList) {
-                    // Execute all of them
-                    var fn, i = 0;
-                    while (fn = readyList[i++]) {
-                        fn.call(win, this);
-                    }
-
-                    // Reset the list of functions
-                    readyList = null;
-                }
-            },
-            /**
-            * @description ä¯ÀÀÆ÷ÅĞ¶Ï<br/>
-            * ¿ÉÒÔÅĞ¶Ïä¯ÀÀÆ÷µÄºËĞÄºÍjavascriptµÄ°æ±¾ºÅ
-            * ÓĞie,webkit,operaºÍgeckoËÄÖÖ
-            * ÖµÎªÊı×Ö±íÊ¾µÄ°æ±¾ºÅ£¬Èç¹û²»ÊÇ¸ÃºËĞÄ£¬ÖµÎª0
-            * @example Breeze.UA.ie
-            */
-            UA: function () {
-                var o = {
-                    ie: 0,
-                    gecko: 0,
-                    webkit: 0,
-                    opera: 0
-                },
-				ua = navigator.userAgent,
-				m,
-				numberify = function (s) {
-				    var c = 0;
-				    return parseFloat(s.replace(/\./g, function () {
-				        return (c++ == 1) ? '' : '.';
-				    }));
-				};
-                if (ua) {
-                    m = ua.match(/AppleWebKit\/([^\s]*)/);
-                    if (m && m[1]) {
-                        o.webkit = numberify(m[1]);
-                    }
-
-                };
-
-                if (!o.webkit) { // not webkit
-                    // @todo check Opera/8.01 (J2ME/MIDP; Opera Mini/2.0.4509/1316; fi; U; ssr)
-                    m = ua.match(/Opera[\s\/]([^\s]*)/);
-                    if (m && m[1]) {
-                        o.opera = numberify(m[1]);
-                    } else { // not opera or webkit
-                        m = ua.match(/MSIE\s([^;]*)/);
-                        if (m && m[1]) {
-                            o.ie = numberify(m[1]);
-                        } else { // not opera, webkit, or ie
-                            m = ua.match(/Gecko\/([^\s]*)/);
-                            if (m) {
-                                o.gecko = 1; // Gecko detected, look for revision
-                                m = ua.match(/rv:([^\s\)]*)/);
-                                if (m && m[1]) {
-                                    o.gecko = numberify(m[1]);
-                                }
-                            }
-                        }
-                    }
-                }
-                return o;
-            } (),
-            /***
-            * @description ÓÃÓÚÊôĞÔºÏ²¢
-            * @param a ±»¼Ó¹¤µÄ¶ÔÏó
-            * @param b ½«Æä²ÎÊıµÄÊôĞÔ¸³¸øµÚÒ»¸ö¶ÔÏó,
-            * @param overWrite È·¶¨ÊÇ·ñ¶ÔÒÑ¾­ÓĞµÄÊôĞÔÖ±½Ó¸²¸Ç
-            * @returns ¼Ó¹¤ºóµÄ¶ÔÏó
-            */
-            mix: function (/**Object*/a, /**Object*/b, /**Boolean*/overWrite) {
-                for (var p in b) {
-                    if (overWrite || (typeof a[p] == 'undefined')) {
-                        a[p] = b[p];
-                    }
-                }
-                return a;
-            },
-            /***
-            * @description ¶à¶ÔÏó¸²¸Ç
-            * @param {Object} object ĞèÒª¸²¸ÇµÄ¶ÔÏó
-            * @return ¼Ó¹¤ºóµÄ¶ÔÏó
-            */
-            merge: function (o) {
-                var a = arguments, i, l = a.length;
-                for (i = 1; i < l; i = i + 1) {
-                    Breeze.mix(o, a[i], true);
-                }
-                return o;
-            },
-            /**
-            * @description ½«ÀàÊı×é×ª»»ÎªÊı×é
-            * @param {ArrayLike} array ÀàÊı×é
-            * @returns Array ¼Ó¹¤ºóµÄÊı×é
-            */
-            makeArray: function (o/*=====, results=====*/) {
-                if (B.isArray(o)) return o;
-                if (typeof o.length !== 'number' || B.isString(o) || B.isFunction(o)) {
-                    return [o];
-                }
-                return Array.prototype.slice.call(o, 0);
-                /*=====
-                if ( results ) {
-                results.push.apply( results, array);
-                return results;
-                }
-				
-                return array;
-                =====*/
-            },
-            /**
-            * @description ½«×Ö·û´®×óÓÒÁ½²àµÄ¿Õ°×È¥µô
-            * @param {String} str ×Ö·û´®
-            * @return ¼Ó¹¤ºóµÄ×Ö·û´®
-            */
-            trim: function (str) {
-                if (typeof str === 'string') {
-                    return str.trim ? str.trim() : str.replace(/\s+$/, '');
-                }
-                return '';
-            },
-            /**
-            * @description ¼ì²é¶ÔÏóÊÇ·ñÊÇº¯Êı
-            * @param {Object} obj ÈÎÒâ¶ÔÏó
-            * @returns Boolean
-            */
-            isFunction: function (obj) {
-                return Object.prototype.toString.call(obj) === "[object Function]";
-            },
-            /**
-            * @description ¼ì²é¶ÔÏóÊÇ·ñÎªÊı×é
-            * @param {Object} objÈÎÒâ¶ÔÏó
-            * @returns Boolean
-            */
-            isArray: function (obj) {
-                return Object.prototype.toString.call(obj) === '[object Array]';
-            },
-            /**
-            * @description ¼ì²é¶ÔÏóÊÇ·ñÎª×Ö·û´®
-            * @param {Object} objÈÎÒâ¶ÔÏó
-            * @returns Boolean
-            */
-            isString: function (o) {
-                return Object.prototype.toString.call(o) === '[object String]';
-            },
-            /**
-            * @description Éè¶¨ËõĞ´
-            */
-            shortcut: function (s) {
-                word && (window[word] = undefined);
-                window[word = s] = Breeze;
-            },
-            /**
-            * @description ½ÓÊÜCSS
-            * @param {String} url µØÖ·
-            */
-            loadCSS: function (url, id) {
-                var css = document.createElement('link');
-                css.type = 'text/css';
-				css.rel = 'stylesheet';
-				css.href = url;
-				if (id){
-					css.id = id;
-				}
-                document.body.appendChild(css);
-				return css;
-            }
-        };
-
-        /**
-        * Set Shortcut
-        */
-        Breeze.shortcut('B');
-
-
-        var bindNative = function () {
-            ['every', 'forEach', 'filter', 'map', 'some'].forEach(function (n) {
-                B[n] = function () {
-                    var arg = arguments, l = arg.length;
-                    if (l == 0) {
-                        return null;
-                    }
-                    var newarg = Breeze.makeArray(arg);
-                    return Array.prototype[n].apply(newarg.shift(), newarg);
-                }
-            });
-        };
-        if (Array.prototype.some) {
-            bindNative();
+    toJson: function (options) {
+        if (options && options.onlyChanged) {
+            return this. changedAttributes();
         } else {
-           B.require('native', bindNative);
+            return _.clone(this.attributes);
         }
-        /**
-        * @name Breeze.$
-        * @function
-        */
-        var bindDom = function (B) {
-            if (typeof Sizzle !== 'undefined') {//ÔØÈë,ÕûºÏsizzle;
-                /**
-                * @lends Breeze
-                * @description XXº¯Êı
-                */
-                B.$$ = Sizzle;
-                /**
-                * @lends Breeze
-                * @description XXº¯Êı
-                */
-                B.$ = function (selector, parentNode) {
-                    var results = Sizzle(selector, parentNode);
-                    return results.length ? results[0] : null;
-                }
-            } else {//²»ÔØÈë,ÕûºÏquerySelector
-                B.$ = function (selector, parentNode) {
-                    parentNode = parentNode || document;
-                    return parentNode.querySelector(selector);
-                };
-                B.$$ = function (selector, parentNode) {
-                    parentNode = parentNode || document;
-                    var ar = parentNode.querySelectorAll(selector), l = ar.length, res = [];
-                    for (var i = 0; i < l; i++) {
-                        res.push(ar[i]);
-                    }
-                    return res;
-                };
-            }
-        };
-        if (document.querySelectorAll) {
-            bindDom(B);
-        } else {
-            B.require('sizzle', bindDom);
-        }
-
-
-
-
-        /*
-        * Á´Ê½ºËĞÄ´úÂë
-        */
-        Function.prototype.method = function (name, fn) {
-            this.prototype[name] = fn;
-            return this;
-        };
-        function _$(el) {
-            if (B.isString(el)) {
-                this.nodes = B.$$(el);
-            } else {
-                if (el && el.nodeType && el.nodeType === 1) {
-                    this.nodes = B.makeArray(el);
-                } else {
-                    this.nodes = [];
-                }
-            }
-            this[0] = this.nodes[0];
-            this.length = this.nodes.length;
-            //return this.nodes;
-        };
-        B.query = function (el) { return new _$(el); }
-        B.extend = function (name, fn) {
-            _$.method(name, fn);
-            return this;
-        };
     }
-})();
+});
+
+
+var BaseCollection = Backbone.Collection.extend({
+    url: function () {
+        return 'http://leancloud.cn/1.1/classes/' + this.model.prototype.objectClass
+    },
+
+    parse: function (resp, options) {
+        if (resp && resp.results) {
+            return resp.results;
+        }
+        return resp;
+    }
+});
+
+
+var BaseCollectionView = Backbone.View.extend({
+    subView: null,
+
+    _initialize: function () {
+        this.listenTo(this.collection, 'reset', this.render);
+        this.listenTo(this.collection, 'add', this.addOne);
+        this._views = [];
+    },
+
+    createSubView: function (model) {
+        var viewClass = this.subView || Backbone.View;
+        var v = new viewClass({model: model});
+        this._views.push(v);
+        return v;
+    },
+
+    addOne: function () {
+        this.$el.append(this.createSubView(model).render().$el);
+    },
+
+    render: function () {
+        var _this = this;
+        _.each(this._views, function (subview) {
+            subview.remove().off();
+        });
+
+        this._views = [];
+        if (!this.collection)
+            return this;
+        this.collection.each(function (model) {
+            _this.addOne(model);
+        });
+    }
+});
+
+var BasePage = Backbone.View.extend({
+    hide: function () {
+        this.$el.hide();
+    },
+    show: function () {
+        this.$el.show();
+    }
+});
