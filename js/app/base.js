@@ -32,7 +32,7 @@ var BaseModel = Backbone.Model.extend({
 
 var BaseCollection = Backbone.Collection.extend({
     url: function () {
-        return 'http://leancloud.cn/1.1/classes/' + this.model.prototype.objectClass
+        return 'https://leancloud.cn/1.1/classes/' + this.model.prototype.objectClass
     },
 
     parse: function (resp, options) {
@@ -60,7 +60,7 @@ var BaseCollectionView = Backbone.View.extend({
         return v;
     },
 
-    addOne: function () {
+    addOne: function (model) {
         this.$el.append(this.createSubView(model).render().$el);
     },
 
